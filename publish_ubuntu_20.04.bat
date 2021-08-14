@@ -1,0 +1,1 @@
+cmd /K dotnet publish -c release -r ubuntu.20.04-x64 /p:PublishSingleFile=true /p:Configuration=Release;AssemblyName=server -o bin --self-contained

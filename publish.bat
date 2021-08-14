@@ -1,0 +1,1 @@
+cmd /K dotnet publish -c release -r win-x86 /p:PublishSingleFile=true /p:Configuration=Release;AssemblyName=server -o bin --self-contained
