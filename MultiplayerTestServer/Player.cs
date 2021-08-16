@@ -9,7 +9,7 @@ namespace MultiplayerTestServer
     {
         public TcpClient Socket { get; private set; }
         public NetworkStream Stream { get; private set; }
-        public float[] Position { get; private set; }
+        public float[] Position { get; set; }
         public string ID { get; private set; }
         public string encryptionKey { get; private set; }
         public bool Listening;
@@ -24,12 +24,9 @@ namespace MultiplayerTestServer
             Socket = _socket;
             Stream = Socket.GetStream();
 
+            Position = Map.RandomCoordinates();
+
             Random r = new Random();
-            int rX = r.Next(Map.Bounds[0, 0], Map.Bounds[0, 1]);
-            int rY = r.Next(Map.Bounds[1, 0], Map.Bounds[1, 1]);
-
-            Position = new float[] { rX, rY };
-
             ID = new string(Enumerable.Repeat("abcdefghijklmnopqrstuvwxyz0123456789", 4).Select(s => s[r.Next(s.Length)]).ToArray());
             encryptionKey = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 8).Select(s => s[r.Next(s.Length)]).ToArray());
 
