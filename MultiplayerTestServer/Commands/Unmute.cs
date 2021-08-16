@@ -9,7 +9,7 @@
 
                 target.sendServerMessage($"You have been unmuted");
                 Log(author, $"Unmuted [{target.ID}]", false);
-                Server.broadcast(PacketType.ServerMessage, $"Unmuted [{target.ID}]");
+                Server.broadcast(Protocol.PacketType.ServerMessage, $"Unmuted [{target.ID}]");
             } else
             {
                 Log(author, $"[{target.ID}] is already unmuted");

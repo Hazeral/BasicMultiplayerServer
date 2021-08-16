@@ -1,45 +1,96 @@
-﻿namespace MultiplayerTestServer
+﻿using System;
+
+namespace MultiplayerTestServer
 {
-    public enum PacketType
+    class Protocol
     {
-        PlayerWelcome,
-        PlayerJoin,
-        PositionsUpdate,
-        PlayerInput,
-        PlayerDisconnect,
-        Ping,
-        ChatMessage,
-        ServerMessage,
-        ClearMessages
+        public enum PacketType
+        {
+            PlayerWelcome,
+            PlayerJoin,
+            PositionsUpdate,
+            PlayerInput,
+            PlayerDisconnect,
+            Ping,
+            ChatMessage,
+            ServerMessage,
+            ClearMessages
+        }
+
+        public static char PayloadSeparator = '$';
+        public static char PacketSuffix = '~';
+
+        public static string ConstructPacket(PacketType type, string payload)
+        {
+            return $"{(int)type}{PayloadSeparator}{payload}{PacketSuffix}";
+        }
+
+        public static string GetPacket(Player player)
+        {
+            try
+            {
+                string packet = "";
+                bool reading = true;
+
+                while (reading)
+                {
+                    int currentByte = player.Stream.ReadByte();
+                    char byteToChar = DecryptChar(player, System.Text.Encoding.ASCII.GetString(new[] { (byte)currentByte }).ToCharArray()[0], packet.Length);
+
+                    if (currentByte == -1 || byteToChar == PacketSuffix) reading = false;
+                    else
+                    {
+                        packet += byteToChar;
+                    }
+                }
+
+                if (packet == "") throw new Exception("Empty packet");
+                if (Server.verboseLogs) player.Log("Received packet", packet);
+                return packet;
+            }
+            catch (Exception eX)
+            {
+                player.Log("Socket error", $"Error reading packets, {(eX.Message.Contains("WSACancelBlockingCall") ? "WSACancelBlockingCall" : eX.Message)}");
+                if (eX.Message.Contains("An existing connection was forcibly closed by the remote host") ||
+                    eX.Message.Contains("An established connection was aborted by the software in your host machine") ||
+                    eX.Message.Contains("Empty packet"))
+                {
+                    player.Log("Status", "Client has disconnected");
+                    player.disconnect();
+                }
+            }
+
+            return "";
+        }
+
+        public static string EncryptData(Player player, string data)
+        {
+            if (player.encrypt)
+            {
+                char[] output = data.ToCharArray();
+
+                for (int i = 0; i < data.ToCharArray().Length; i++)
+                {
+                    output[i] = (char)(data.ToCharArray()[i] ^ player.encryptionKey[i % (player.encryptionKey.Length / sizeof(char))]);
+                }
+
+                return new string(output);
+            }
+            if (Server.encrypted) player.encrypt = true; // start encrypting only after the first packet (welcome packet incl. encryption key)
+
+            return data;
+        }
+
+        public static char DecryptChar(Player player, char data, int length)
+        {
+            if (player.encrypt)
+            {
+                char output = (char)(data ^ player.encryptionKey[length % (player.encryptionKey.Length / sizeof(char))]);
+
+                return output;
+            }
+
+            return data;
+        }
     }
-
-    /*
-    
-        Packets begin with a packet ID followed by a $ to separate the payload, the packet is also suffixed with a ~ to identify the end of a packet
-        Most payloads for sharing player information will be formatted similar to id:info (i.e. id:x,y)
-
-        Example:
-            1$sd8c:-3,-7~
-            1 refers to the PlayerJoin packet
-            The payload consists of the new player's identifier followed by current coordinates
-
-
-        Some other packets such as PositionsUpdate which contain information for multiple players are formatted in a similar fashion but each player's information is separated by a ;
-    
-        Example:
-            2$sd8c:-3,-7;8wsf:5,0;xcu8:-5,2~
-            Each player's information in the payload is separated by a ; (sd8c:-3,-7  8wsf:5,0  xcu8:-5,2)
-
-
-        Finally, there are packets which will contain little to no payload, the PlayerDisconnect packet does not require coordinates and will simply send the ID in the payload
-        Whereas the ping payload will simply send an empty payload as it is used to only identify whether the client is still connected
-
-        Example:
-            5$~
-            The payload is empty but the packet will still contain the payload seperator ($) 
-
-
-        The initial packet sent (PlayerWelcome) will be unencrypted, the packets which follow will then use XOR encryption with the player ID as the key
-
-    */
 }

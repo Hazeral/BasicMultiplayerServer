@@ -15,7 +15,7 @@ namespace MultiplayerTestServer
                 else target.sendServerMessage($"You have been muted");
 
                 Log(author, $"Muted [{target.ID}] for [{reason}]", false);
-                Server.broadcast(PacketType.ServerMessage, $"Muted [{target.ID}] for [{reason}]");
+                Server.broadcast(Protocol.PacketType.ServerMessage, $"Muted [{target.ID}] for [{reason}]");
             } else
             {
                 Log(author, $"[{target.ID}] is already muted");

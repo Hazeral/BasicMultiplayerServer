@@ -13,7 +13,7 @@ namespace MultiplayerTestServer
                 target.sendServerMessage($"You have been kicked for: {reason}");
             }
             target.disconnect();
-            Server.broadcast(PacketType.ServerMessage, $"Disconnected [{args[0]}] for [{reason}]");
+            Server.broadcast(Protocol.PacketType.ServerMessage, $"Disconnected [{args[0]}] for [{reason}]");
             Log(author, $"Disconnected [{args[0]}] for [{reason}]", false);
         }
     }

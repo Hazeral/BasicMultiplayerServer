@@ -6,7 +6,7 @@
         {
             string message = string.Join(" ", args);
 
-            Server.broadcast(PacketType.ServerMessage, message);
+            Server.broadcast(Protocol.PacketType.ServerMessage, message);
             Log(author, $"Announced message [{message}]", false);
         }
     }

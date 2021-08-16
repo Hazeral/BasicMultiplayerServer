@@ -17,7 +17,7 @@ namespace MultiplayerTestServer
         public bool Listening;
         private Thread listeningThread;
         private double lastPing;
-        private bool encrypt = false;
+        public bool encrypt = false;
         public bool admin = false;
         public bool muted = false;
 
@@ -36,7 +36,7 @@ namespace MultiplayerTestServer
             encryptionKey = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 8).Select(s => s[r.Next(s.Length)]).ToArray());
 
             Log("Status", "Client has connected" + (Server.encrypted ? $", encryption key: [{encryptionKey}]" : ""));
-            sendPacket((int)(PacketType.PlayerWelcome), ID + (Server.encrypted ? $":{encryptionKey}" : ""));
+            sendPacket((int)(Protocol.PacketType.PlayerWelcome), ID + (Server.encrypted ? $":{encryptionKey}" : ""));
 
             listeningThread = new Thread(readPackets);
             Listening = true;
@@ -44,13 +44,13 @@ namespace MultiplayerTestServer
             lastPing = Server.ConvertToUnixTimestamp(DateTime.Now);
         }
 
-        public void sendPacket(PacketType type, string payload)
+        public void sendPacket(Protocol.PacketType type, string payload)
         {
             try
             {
-                string pack = $"{(int)type}${payload}~";
+                string pack = Protocol.ConstructPacket(type, payload);
 
-                byte[] msg = System.Text.Encoding.ASCII.GetBytes(encryptData(pack));
+                byte[] msg = System.Text.Encoding.ASCII.GetBytes(Protocol.EncryptData(this, pack));
                 Stream.Write(msg, 0, msg.Length);
                 if (Server.verboseLogs) Log("Sent packet", $"{type} > {payload}");
             }
@@ -67,20 +67,20 @@ namespace MultiplayerTestServer
             {
                 if (Stream == null) continue;
 
-                string packet = getPacket();
-                string[] data = packet.Split('$'); // id$content
+                string packet = Protocol.GetPacket(this);
+                string[] data = packet.Split(Protocol.PayloadSeparator); // id$content
 
                 try
                 {
                     switch (int.Parse(data[0]))
                     {
-                        case (int)(PacketType.PlayerInput):
+                        case (int)(Protocol.PacketType.PlayerInput):
                             updatePosition(data[1]);
                             break;
-                        case (int)(PacketType.Ping):
+                        case (int)(Protocol.PacketType.Ping):
                             ping();
                             break;
-                        case (int)(PacketType.ChatMessage):
+                        case (int)(Protocol.PacketType.ChatMessage):
                             newChatMessage(data[1]);
                             break;
                         default:
@@ -108,7 +108,7 @@ namespace MultiplayerTestServer
         public void disconnect(bool broadcast = true)
         {
             Server.players.Remove(ID);
-            if (broadcast) Server.broadcast(PacketType.PlayerDisconnect, ID);
+            if (broadcast) Server.broadcast(Protocol.PacketType.PlayerDisconnect, ID);
             sendServerMessage("You have been disconnected");
             Listening = false;
             Stream.Close();
@@ -118,7 +118,7 @@ namespace MultiplayerTestServer
         private void ping()
         {
             lastPing = Server.ConvertToUnixTimestamp(DateTime.Now);
-            sendPacket(PacketType.Ping, "");
+            sendPacket(Protocol.PacketType.Ping, "");
         }
 
         private void newChatMessage(string msg)
@@ -143,13 +143,13 @@ namespace MultiplayerTestServer
                         Command cmd = Commands.Get(command);
                         if (cmd != null) cmd.Run(cmdArgs, this);
                     }
-                } else Server.broadcast(PacketType.ChatMessage, $"{ID}:{input}");
+                } else Server.broadcast(Protocol.PacketType.ChatMessage, $"{ID}:{input}");
             }
         }
 
         public void sendServerMessage(string msg)
         {
-            sendPacket(PacketType.ServerMessage, msg);
+            sendPacket(Protocol.PacketType.ServerMessage, msg);
             Log("Sent server message", msg);
         }
 
@@ -178,74 +178,6 @@ namespace MultiplayerTestServer
 
             if (!Server.newPositionPlayers.Contains(this)) Server.newPositionPlayers.Add(this);
             Log("Updated position", $"{Position[0]}, {Position[1]}");
-        }
-
-        private string getPacket()
-        {
-            try
-            {
-                string packet = "";
-                bool reading = true;
-
-                while (reading)
-                {
-                    int currentByte = Stream.ReadByte();
-                    char byteToChar = decryptChar(System.Text.Encoding.ASCII.GetString(new[] { (byte)currentByte }).ToCharArray()[0], packet.Length);
-
-                    if (currentByte == -1 || byteToChar == '~') reading = false;
-                    else
-                    {
-                        packet += byteToChar;
-                    }
-                }
-
-                if (packet == "") throw new Exception("Empty packet");
-                if (Server.verboseLogs) Log("Received packet", packet);
-                return packet;
-            }
-            catch (Exception eX)
-            {
-                Log("Socket error", $"Error reading packets, {(eX.Message.Contains("WSACancelBlockingCall") ? "WSACancelBlockingCall" : eX.Message)}");
-                if (eX.Message.Contains("An existing connection was forcibly closed by the remote host") || 
-                    eX.Message.Contains("An established connection was aborted by the software in your host machine") ||
-                    eX.Message.Contains("Empty packet"))
-                {
-                    Log("Status", "Client has disconnected");
-                    disconnect();
-                }
-            }
-
-            return "";
-        }
-
-        private string encryptData(string data)
-        {
-            if (encrypt)
-            {
-                char[] output = data.ToCharArray();
-
-                for (int i = 0; i < data.ToCharArray().Length; i++)
-                {
-                    output[i] = (char)(data.ToCharArray()[i] ^ encryptionKey[i % (encryptionKey.Length / sizeof(char))]);
-                }
-
-                return new string(output);
-            }
-            if (Server.encrypted) encrypt = true;
-
-            return data;
-        }
-
-        private char decryptChar(char data, int length)
-        {
-            if (encrypt)
-            {
-                char output = (char)(data ^ encryptionKey[length % (encryptionKey.Length / sizeof(char))]);
-
-                return output;
-            }
-
-            return data;
         }
 
         public void Log(string type, string message)

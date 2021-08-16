@@ -27,7 +27,7 @@ namespace MultiplayerTestServer
         private static int port = 2330;
         public static int pingTimeout = 10;
 
-        public static void broadcast(PacketType type, string payload)
+        public static void broadcast(Protocol.PacketType type, string payload)
         {
             Log("Broadcast", $"{type} > {payload}");
             for(int i = 0; i < players.Count; i++)
@@ -54,7 +54,7 @@ namespace MultiplayerTestServer
                     if (payload != "")
                     {
                         Log("Broadcasting positions update", payload);
-                        broadcast(PacketType.PositionsUpdate, payload);
+                        broadcast(Protocol.PacketType.PositionsUpdate, payload);
                         newPositionPlayers.Clear();
                     }
                 }
@@ -86,10 +86,10 @@ namespace MultiplayerTestServer
                         Player player = new Player(client);
                         foreach (Player p in players.Values.ToList())
                         {
-                            player.sendPacket(PacketType.PlayerJoin, $"{p.ID}:{p.Position[0]},{p.Position[1]}");
+                            player.sendPacket(Protocol.PacketType.PlayerJoin, $"{p.ID}:{p.Position[0]},{p.Position[1]}");
                         }
                         players.Add(player.ID, player);
-                        broadcast(PacketType.PlayerJoin, $"{player.ID}:{player.Position[0]},{player.Position[1]}");
+                        broadcast(Protocol.PacketType.PlayerJoin, $"{player.ID}:{player.Position[0]},{player.Position[1]}");
                     } catch
                     {
                         Log("Error", "Cannot accept clients");

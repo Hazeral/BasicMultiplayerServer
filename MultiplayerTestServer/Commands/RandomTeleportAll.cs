@@ -20,7 +20,7 @@ namespace MultiplayerTestServer
 
             Server.newPositionPlayers.Clear();
             Server.newPositionPlayers.AddRange(Server.players.Values.ToList());
-            Server.broadcast(PacketType.ServerMessage, "You have been teleported");
+            Server.broadcast(Protocol.PacketType.ServerMessage, "You have been teleported");
 
             Log(author, $"Randomly teleported all players");
         }
