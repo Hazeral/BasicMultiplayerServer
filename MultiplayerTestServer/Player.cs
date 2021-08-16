@@ -27,8 +27,8 @@ namespace MultiplayerTestServer
             Stream = Socket.GetStream();
 
             Random r = new Random();
-            int rX = r.Next(-8, 8);
-            int rY = r.Next(-4, 4);
+            int rX = r.Next(Map.Bounds[0, 0], Map.Bounds[0, 1]);
+            int rY = r.Next(Map.Bounds[1, 0], Map.Bounds[1, 1]);
 
             Position = new float[] { rX, rY };
 

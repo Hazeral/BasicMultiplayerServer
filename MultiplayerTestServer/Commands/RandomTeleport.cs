@@ -7,8 +7,8 @@ namespace MultiplayerTestServer
         static void CommandRandomTeleport(string[] args, Player author, Player target)
         {
             Random r = new Random();
-            int x = r.Next(-8, 8);
-            int y = r.Next(-4, 4);
+            int x = r.Next(Map.Bounds[0, 0], Map.Bounds[0, 1]);
+            int y = r.Next(Map.Bounds[1, 0], Map.Bounds[1, 1]);
 
             target.Position[0] = x;
             target.Position[1] = y;
