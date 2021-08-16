@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace MultiplayerTestServer
 {
@@ -16,7 +14,7 @@ namespace MultiplayerTestServer
         public string encryptionKey { get; private set; }
         public bool Listening;
         private Thread listeningThread;
-        private double lastPing;
+        public double lastPing;
         public bool encrypt = false;
         public bool admin = false;
         public bool muted = false;
@@ -66,26 +64,21 @@ namespace MultiplayerTestServer
             while (Listening)
             {
                 if (Stream == null) continue;
-
-                string packet = Protocol.GetPacket(this);
-                string[] data = packet.Split(Protocol.PayloadSeparator); // id$content
+                string packet = "";
 
                 try
                 {
-                    switch (int.Parse(data[0]))
+                    packet = Protocol.GetPacket(this);
+                    string[] data = packet.Split(Protocol.PayloadSeparator); // id$content
+
+                    Action<Player, string> handler = PacketHandler.GetHandler(int.Parse(data[0]));
+
+                    if (handler != null)
                     {
-                        case (int)(Protocol.PacketType.PlayerInput):
-                            updatePosition(data[1]);
-                            break;
-                        case (int)(Protocol.PacketType.Ping):
-                            ping();
-                            break;
-                        case (int)(Protocol.PacketType.ChatMessage):
-                            newChatMessage(data[1]);
-                            break;
-                        default:
-                            Log("Unknown packet", packet);
-                            break;
+                        handler(this, data[1]);
+                    } else
+                    {
+                        Log("Unknown packet", packet);
                     }
                 }
                 catch (Exception ex)
@@ -115,69 +108,10 @@ namespace MultiplayerTestServer
             Socket.Close();
         }
 
-        private void ping()
-        {
-            lastPing = Server.ConvertToUnixTimestamp(DateTime.Now);
-            sendPacket(Protocol.PacketType.Ping, "");
-        }
-
-        private void newChatMessage(string msg)
-        {
-            Regex rgx = new Regex("[^a-zA-Z0-9 -/.]");
-            string input = rgx.Replace(msg.Trim(), string.Empty);
-            if (input.Length != 0)
-            {
-                Log("Chat message", input);
-                if (muted)
-                {
-                    sendServerMessage("You are muted");
-                    return;
-                }
-                if (input.StartsWith('/'))
-                {
-                    if (admin)
-                    {
-                        string command = input.Split()[0].Replace("/", "");
-                        string[] cmdArgs = input.Split().Skip(1).ToArray();
-
-                        Command cmd = Commands.Get(command);
-                        if (cmd != null) cmd.Run(cmdArgs, this);
-                    }
-                } else Server.broadcast(Protocol.PacketType.ChatMessage, $"{ID}:{input}");
-            }
-        }
-
         public void sendServerMessage(string msg)
         {
             sendPacket(Protocol.PacketType.ServerMessage, msg);
             Log("Sent server message", msg);
-        }
-
-        private void updatePosition(string data)
-        {
-            string[] info = data.Split(':');
-            float delta = float.Parse(info[0]);
-            List<char> keys = new List<char>(info[1].ToCharArray());
-
-            if (keys.Contains('W'))
-            {
-                Position[1] += 1 * delta;
-            }
-            if (keys.Contains('A'))
-            {
-                Position[0] -= 1 * delta;
-            }
-            if (keys.Contains('S'))
-            {
-                Position[1] -= 1 * delta;
-            }
-            if (keys.Contains('D'))
-            {
-                Position[0] += 1 * delta;
-            }
-
-            if (!Server.newPositionPlayers.Contains(this)) Server.newPositionPlayers.Add(this);
-            Log("Updated position", $"{Position[0]}, {Position[1]}");
         }
 
         public void Log(string type, string message)
