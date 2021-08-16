@@ -13,11 +13,11 @@ namespace MultiplayerTestServer
         public string ID { get; private set; }
         public string encryptionKey { get; private set; }
         public bool Listening;
-        private Thread listeningThread;
         public double lastPing;
         public bool encrypt = false;
         public bool admin = false;
         public bool muted = false;
+        private Thread listeningThread;
 
         public Player(TcpClient _socket)
         {
