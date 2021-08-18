@@ -8,7 +8,7 @@ namespace MultiplayerTestServer
         {
             if (args.Length != 0)
             {
-                Command cmd = Get(args[0]);
+                Command cmd = GetRestricted(author, args[0]);
                 if (cmd != null)
                 {
                     Log(author, $"{(author != null ? "/" : "")}{cmd.Name}{(cmd.Aliases.Length != 0 ? $" [{string.Join(", ", cmd.Aliases)}]" : "")}{cmd.UsageText} - {cmd.Description}");
@@ -20,10 +20,31 @@ namespace MultiplayerTestServer
                 return;
             }
 
+            Command[] commands = GetAllCommandsRestricted(author);
+
+            if (commands == null)
+            {
+                Log(author, "Help >\nNo commands available");
+                return;
+            }
+
             Log(author, $"Help >\n" + string.Join("\n",
-                allCommands.Select(
+                commands.Select(
                     cmd => $"{(author != null ? "/" : "")}{cmd.Name}{(cmd.Aliases.Length != 0 ? $" [{string.Join(", ", cmd.Aliases)}]" : "")}{cmd.UsageText} - {cmd.Description}")
                 ));
+        }
+
+        static Command[] GetAllCommandsRestricted(Player player)
+        {
+            Command[] output = null;
+            if (player == null) output = allCommands;
+            else
+            {
+                if (player.admin) output = allCommands.Where(cmd => !cmd.ServerOnly).ToArray();
+                else output = allCommands.Where(cmd => !cmd.ServerOnly && !cmd.AdminOnly).ToArray();
+            }
+
+            return output;
         }
     }
 }

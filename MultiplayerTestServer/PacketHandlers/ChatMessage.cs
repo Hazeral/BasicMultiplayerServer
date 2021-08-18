@@ -25,8 +25,8 @@ namespace MultiplayerTestServer
                     string command = input.Split()[0].Replace("/", "");
                     string[] cmdArgs = input.Split().Skip(1).ToArray();
 
-                    Command cmd = Commands.Get(command);
-                    if (cmd != null && (!cmd.AdminOnly || cmd.AdminOnly && player.admin)) cmd.Run(cmdArgs, player);
+                    Command cmd = Commands.GetRestricted(player, command);
+                    if (cmd != null) cmd.Run(cmdArgs, player);
                     else player.sendServerMessage("Command not found, type [/help] for a list of commands");
                 }
                 else Server.broadcast(Protocol.PacketType.ChatMessage, $"{player.ID}:{input}");

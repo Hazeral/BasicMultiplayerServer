@@ -58,12 +58,6 @@ namespace MultiplayerTestServer
         {
             Commands.Log(author, $"Running command [{Name}]", false);
 
-            if (author != null && ServerOnly)
-            {
-                Commands.Log(author, $"This command can only be used by the server");
-                return;
-            }
-
             if (args.Length < requiredArguments)
             {
                 Commands.Log(author, $"Not enough arguments, usage:{UsageText}");

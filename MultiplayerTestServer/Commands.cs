@@ -20,7 +20,7 @@ namespace MultiplayerTestServer
             new Command("demote", "Demote a player", new string[]{ "deop" }, new CommandArgument[] {
                 new CommandArgument("player", false, CommandArgumentType.PlayerID)
             }, CommandDemote),
-            new Command("list", "List all players", new string[]{ "players" }, null, CommandList),
+            new Command("list", "List all players", new string[]{ "players" }, null, CommandList, false, false),
             new Command("mute", "Mute a player", null, new CommandArgument[] {
                 new CommandArgument("player", false, CommandArgumentType.PlayerID),
                 new CommandArgument("reason", true, CommandArgumentType.String)
@@ -45,7 +45,7 @@ namespace MultiplayerTestServer
             }, CommandAnnounce),
             new Command("help", "Information on commands", null, new CommandArgument[] {
                 new CommandArgument("command", true, CommandArgumentType.String)
-            }, CommandHelp),
+            }, CommandHelp, false, false),
             new Command("randomteleport", "Randomly teleport a player", new string[]{ "rtp" }, new CommandArgument[] {
                 new CommandArgument("player", false, CommandArgumentType.PlayerID)
             }, CommandRandomTeleport),
@@ -61,6 +61,29 @@ namespace MultiplayerTestServer
             {
                 if (cmd.Name == name || cmd.Aliases.Contains(name))
                 {
+                    output = cmd;
+                    break;
+                }
+            }
+
+            return output;
+        }
+
+        public static Command GetRestricted(Player player, string name)
+        {
+            name = name.ToLower();
+            Command output = null;
+
+            foreach (Command cmd in allCommands)
+            {
+                if (cmd.Name == name || cmd.Aliases.Contains(name))
+                {
+                    if (player != null)
+                    {
+                        if (cmd.ServerOnly) break;
+                        if (cmd.AdminOnly && !player.admin) break;
+                    }
+
                     output = cmd;
                     break;
                 }
