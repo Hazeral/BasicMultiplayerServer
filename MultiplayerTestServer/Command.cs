@@ -48,9 +48,10 @@ namespace MultiplayerTestServer
             
             foreach(CommandArgument arg in Arguments)
             {
-                UsageText += $" {arg.Name}";
+                UsageText += $" <{arg.Name}";
                 if (arg.Optional) UsageText += "(optional)";
                 else requiredArguments++;
+                UsageText += ">";
             }
         }
 

@@ -11,7 +11,7 @@ namespace MultiplayerTestServer
                 Command cmd = GetRestricted(author, args[0]);
                 if (cmd != null)
                 {
-                    Log(author, $"{(author != null ? "/" : "")}{cmd.Name}{(cmd.Aliases.Length != 0 ? $" [{string.Join(", ", cmd.Aliases)}]" : "")}{cmd.UsageText} - {cmd.Description}");
+                    Log(author, $"{(author != null ? "/" : "")}{cmd.Name}{cmd.UsageText} - {cmd.Description}{(cmd.Aliases.Length != 0 ? $" [Aliases: {string.Join(", ", cmd.Aliases)}]" : "")}");
                 } else
                 {
                     Log(author, $"The command [{args[0]}] does not exist");
@@ -30,7 +30,7 @@ namespace MultiplayerTestServer
 
             Log(author, $"Help >\n" + string.Join("\n",
                 commands.Select(
-                    cmd => $"{(author != null ? "/" : "")}{cmd.Name}{(cmd.Aliases.Length != 0 ? $" [{string.Join(", ", cmd.Aliases)}]" : "")}{cmd.UsageText} - {cmd.Description}")
+                    cmd => $"{(author != null ? "/" : "")}{cmd.Name}{cmd.UsageText} - {cmd.Description}{(cmd.Aliases.Length != 0 ? $" [Aliases: {string.Join(", ", cmd.Aliases)}]" : "")}")
                 ));
         }
 
