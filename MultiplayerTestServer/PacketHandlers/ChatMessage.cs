@@ -9,24 +9,25 @@ namespace MultiplayerTestServer
         {
             Regex rgx = new Regex("[^a-zA-Z0-9 -/.]");
             string input = rgx.Replace(data.Trim(), string.Empty);
-            if (input.Length != 0)
+
+            if (input.Length != 0 && input.Length <= 250)
             {
                 player.Log("Chat message", input);
+
                 if (player.muted)
                 {
                     player.sendServerMessage("You are muted");
                     return;
                 }
+
                 if (input.StartsWith('/'))
                 {
-                    if (player.admin)
-                    {
-                        string command = input.Split()[0].Replace("/", "");
-                        string[] cmdArgs = input.Split().Skip(1).ToArray();
+                    string command = input.Split()[0].Replace("/", "");
+                    string[] cmdArgs = input.Split().Skip(1).ToArray();
 
-                        Command cmd = Commands.Get(command);
-                        if (cmd != null) cmd.Run(cmdArgs, player);
-                    }
+                    Command cmd = Commands.Get(command);
+                    if (cmd != null && (!cmd.AdminOnly || cmd.AdminOnly && player.admin)) cmd.Run(cmdArgs, player);
+                    else player.sendServerMessage("Command not found, type [/help] for a list of commands");
                 }
                 else Server.broadcast(Protocol.PacketType.ChatMessage, $"{player.ID}:{input}");
             }

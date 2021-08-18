@@ -30,17 +30,19 @@ namespace MultiplayerTestServer
         public readonly string[] Aliases;
         public readonly string Description;
         public readonly bool ServerOnly;
+        public readonly bool AdminOnly;
         public CommandArgument[] Arguments;
         private Action<string[], Player, Player> Execute;
         private int requiredArguments = 0;
         public readonly string UsageText = "";
 
-        public Command(string name, string description, string[] aliases, CommandArgument[] arguments, Action<string[], Player, Player> execute, bool serverOnly = false)
+        public Command(string name, string description, string[] aliases, CommandArgument[] arguments, Action<string[], Player, Player> execute, bool serverOnly = false, bool adminOnly = true)
         {
             Name = name;
             Aliases = aliases ?? (new string[] { });
             Description = description;
             ServerOnly = serverOnly;
+            AdminOnly = adminOnly;
             Arguments = arguments ?? (new CommandArgument[] { });
             Execute = execute;
             

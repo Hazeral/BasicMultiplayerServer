@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace MultiplayerTestServer
 {
@@ -17,75 +18,69 @@ namespace MultiplayerTestServer
             ClearMessages
         }
 
-        public static char PayloadSeparator = '$';
-        public static char PacketSuffix = '~';
-
-        public static string ConstructPacket(PacketType type, string payload)
+        public static byte[] ConstructPacket(PacketType type, string payload)
         {
-            return $"{(int)type}{PayloadSeparator}{payload}{PacketSuffix}";
+            using MemoryStream stream = new MemoryStream();
+            using BinaryWriter writer = new BinaryWriter(stream);
+
+            writer.Write((ushort)(payload.Length + 1)); // + 1 to accommodate for the packet type byte
+            writer.Write((byte)type);
+            writer.Write(System.Text.Encoding.UTF8.GetBytes(payload));
+
+            return stream.ToArray();
         }
 
-        public static string GetPacket(Player player)
+        public static Tuple<byte, string> GetPacket(Player player)
         {
             try
             {
-                string packet = "";
-                bool reading = true;
+                byte[] packetSize = new byte[2];
+                if (player.Stream.Read(packetSize, 0, packetSize.Length) == 0) throw new Exception("0 bytes read");
 
-                while (reading)
-                {
-                    int currentByte = player.Stream.ReadByte();
-                    char byteToChar = DecryptChar(player, System.Text.Encoding.ASCII.GetString(new[] { (byte)currentByte }).ToCharArray()[0], packet.Length);
+                ushort size = BitConverter.ToUInt16(XOR(player, packetSize));
+                if (size > 1000) throw new Exception("Packet size limit exceeded");
 
-                    if (currentByte == -1 || byteToChar == PacketSuffix) reading = false;
-                    else
-                    {
-                        packet += byteToChar;
-                    }
-                }
+                byte[] buffer = new byte[size];
+                player.Stream.Read(buffer, 0, buffer.Length);
 
-                if (packet == "") throw new Exception("Empty packet");
-                if (Server.verboseLogs) player.Log("Received packet", packet);
-                return packet;
+                buffer = XOR(player, buffer, 2);
+
+                using MemoryStream stream2 = new MemoryStream(buffer);
+                using BinaryReader reader2 = new BinaryReader(stream2);
+
+                byte type = reader2.ReadByte();
+                string payload = System.Text.Encoding.UTF8.GetString(reader2.ReadBytes(size));
+
+                if (Server.verboseLogs) player.Log("Received packet", $"{(PacketType)type} > {payload}");
+
+                return new Tuple<byte, string>(type, payload);
             }
             catch (Exception eX)
             {
                 player.Log("Socket error", $"Error reading packets, {(eX.Message.Contains("WSACancelBlockingCall") ? "WSACancelBlockingCall" : eX.Message)}");
                 if (eX.Message.Contains("An existing connection was forcibly closed by the remote host") ||
                     eX.Message.Contains("An established connection was aborted by the software in your host machine") ||
-                    eX.Message.Contains("Empty packet"))
+                    eX.Message.Contains("0 bytes read") ||
+                    eX.Message.Contains("Packet size limit exceeded"))
                 {
                     player.Log("Status", "Client has disconnected");
                     player.disconnect();
                 }
             }
 
-            return "";
+            return null;
         }
 
-        public static string EncryptData(Player player, string data)
+        public static byte[] XOR(Player player, byte[] data, int keyOffset = 0)
         {
             if (player.encrypt)
             {
-                char[] output = data.ToCharArray();
+                byte[] output = data;
 
-                for (int i = 0; i < data.ToCharArray().Length; i++)
+                for (int i = 0; i < data.Length; i++)
                 {
-                    output[i] = (char)(data.ToCharArray()[i] ^ player.encryptionKey[i % (player.encryptionKey.Length / sizeof(char))]);
+                    output[i] = (byte)(data[i] ^ player.encryptionKey[(i + keyOffset) % (player.encryptionKey.Length / sizeof(byte))]);
                 }
-
-                return new string(output);
-            }
-            if (Server.encrypted) player.encrypt = true; // start encrypting only after the first packet (welcome packet incl. encryption key)
-
-            return data;
-        }
-
-        public static char DecryptChar(Player player, char data, int length)
-        {
-            if (player.encrypt)
-            {
-                char output = (char)(data ^ player.encryptionKey[length % (player.encryptionKey.Length / sizeof(char))]);
 
                 return output;
             }

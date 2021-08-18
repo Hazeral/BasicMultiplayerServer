@@ -43,15 +43,17 @@ namespace MultiplayerTestServer
         {
             try
             {
-                string pack = Protocol.ConstructPacket(type, payload);
+                byte[] pack = Protocol.XOR(this, Protocol.ConstructPacket(type, payload));
 
-                byte[] msg = System.Text.Encoding.ASCII.GetBytes(Protocol.EncryptData(this, pack));
-                Stream.Write(msg, 0, msg.Length);
+                Stream.Write(pack, 0, pack.Length);
+
+                if (Server.encrypted) encrypt = true;
                 if (Server.verboseLogs) Log("Sent packet", $"{type} > {payload}");
             }
-            catch
+            catch (Exception eX)
             {
                 Log("Socket error", "Error sending packet");
+                Log("Socket error", eX.Message);
             }
         }
 
@@ -61,27 +63,26 @@ namespace MultiplayerTestServer
             while (Listening)
             {
                 if (Stream == null) continue;
-                string packet = "";
+                Tuple<byte, string> packet = null;
 
                 try
                 {
                     packet = Protocol.GetPacket(this);
-                    string[] data = packet.Split(Protocol.PayloadSeparator); // id$content
 
-                    Action<Player, string> handler = PacketHandler.GetHandler(int.Parse(data[0]));
+                    Action<Player, string> handler = PacketHandler.GetHandler(packet.Item1);
 
                     if (handler != null)
                     {
-                        handler(this, data[1]);
+                        handler(this, packet.Item2);
                     } else
                     {
-                        Log("Unknown packet", packet);
+                        Log("Unknown packet", $"{packet.Item1} > {packet.Item2}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (packet.Trim() == "") continue;
-                    Log("Error parsing packet", packet);
+                    if (packet == null) continue;
+                    Log("Error parsing packet", $"{packet.Item1} > {packet.Item2}");
                     Log("Error", ex.Message);
                 }
 

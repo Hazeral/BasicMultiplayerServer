@@ -140,6 +140,7 @@ namespace MultiplayerTestServer
 
                 Command cmd = Commands.Get(command);
                 if (cmd != null) cmd.Run(cmdArgs);
+                else Log("Command", "Command not found, type [help] for a list of commands");
             }
         }
 
