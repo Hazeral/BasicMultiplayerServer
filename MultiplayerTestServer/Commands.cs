@@ -50,6 +50,13 @@ namespace MultiplayerTestServer
                 new CommandArgument("player", false, CommandArgumentType.PlayerID)
             }, CommandRandomTeleport),
             new Command("randomteleportall", "Randomly teleport all player", new string[]{ "rtpall" }, null, CommandRandomTeleportAll),
+            new Command("whisper", "Send a private message", new string[]{ "w", "pm" }, new CommandArgument[] {
+                new CommandArgument("player", false, CommandArgumentType.PlayerID),
+                new CommandArgument("message", false, CommandArgumentType.String)
+            }, CommandWhisper, false, false),
+            new Command("reply", "Reply to last private message", new string[]{ "r" }, new CommandArgument[] {
+                new CommandArgument("message", false, CommandArgumentType.String)
+            }, CommandReply, false, false)
         };
 
         public static Command Get(string name)

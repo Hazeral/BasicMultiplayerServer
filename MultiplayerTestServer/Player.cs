@@ -17,6 +17,7 @@ namespace MultiplayerTestServer
         public bool encrypt = false;
         public bool admin = false;
         public bool muted = false;
+        public Player lastWhispered = null;
         private Thread listeningThread;
 
         public Player(TcpClient _socket)

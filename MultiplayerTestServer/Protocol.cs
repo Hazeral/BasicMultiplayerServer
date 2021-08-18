@@ -15,7 +15,8 @@ namespace MultiplayerTestServer
             Ping,
             ChatMessage,
             ServerMessage,
-            ClearMessages
+            ClearMessages,
+            PrivateChatMessage
         }
 
         public static byte[] ConstructPacket(PacketType type, string payload)
