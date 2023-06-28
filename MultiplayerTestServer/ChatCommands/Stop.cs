@@ -5,22 +5,29 @@ namespace MultiplayerTestServer
 {
     partial class Commands
     {
-        static void CommandStop(string[] args, Player author, Player target)
-        {
-            foreach (Player p in Server.players.Values.ToList())
-            {
-                Log(author, $"Disconnected {p.ID}");
-                p.sendServerMessage("Server closing");
-                p.disconnect(false);
-            }
+        static Command cmdStop = new Command(
+            "stop",
+            "Stop the server",
+            null,
+            null,
 
-            Server.server.Stop();
-            Server.running = false;
+            delegate(string[] args, Player author, Player target) {
+                foreach (Player p in Server.players.Values.ToList())
+                {
+                    Log(author, $"Disconnected {p.ID}");
+                    p.sendServerMessage("Server closing");
+                    p.disconnect(false);
+                }
 
-            if (Server.LOG_FILE) Server.Log("Logs", Server.LOG_FILE_PATH);
-            Server.LOG_FILE_WRITER.Close();
+                Server.server.Stop();
+                Server.running = false;
 
-            Environment.Exit(0);
-        }
+                if (Server.LOG_FILE) Server.Log("Logs", Server.LOG_FILE_PATH);
+                Server.LOG_FILE_WRITER.Close();
+
+                Environment.Exit(0);
+            },
+            true
+        );
     }
 }

@@ -4,22 +4,32 @@ namespace MultiplayerTestServer
 {
     partial class Commands
     {
-        static void CommandTeleportAll(string[] args, Player author, Player target)
-        {
-            float x = float.Parse(args[0]);
-            float y = float.Parse(args[1]);
+        static Command cmdTeleportAll = new Command(
+            "teleportall", 
+            "Teleport all players", 
+            new string[] { "tpall" }, 
+            new CommandArgument[] {
+                new CommandArgument("x", false, CommandArgumentType.Float),
+                new CommandArgument("y", false, CommandArgumentType.Float)
+            },
 
-            foreach (Player p in Server.players.Values.ToList())
+            delegate(string[] args, Player author, Player target)
             {
-                p.Position[0] = x;
-                p.Position[1] = y;
+                float x = float.Parse(args[0]);
+                float y = float.Parse(args[1]);
+
+                foreach (Player p in Server.players.Values.ToList())
+                {
+                    p.Position[0] = x;
+                    p.Position[1] = y;
+                }
+
+                Server.newPositionPlayers.Clear();
+                Server.newPositionPlayers.AddRange(Server.players.Values.ToList());
+                Server.broadcast(Protocol.PacketType.ServerMessage, "You have been teleported");
+
+                Log(author, $"Teleported all players to [{x},{y}]");
             }
-
-            Server.newPositionPlayers.Clear();
-            Server.newPositionPlayers.AddRange(Server.players.Values.ToList());
-            Server.broadcast(Protocol.PacketType.ServerMessage, "You have been teleported");
-
-            Log(author, $"Teleported all players to [{x},{y}]");
-        }
+        );
     }
 }

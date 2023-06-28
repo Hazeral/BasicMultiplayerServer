@@ -2,10 +2,19 @@
 {
     partial class Commands
     {
-        static void CommandClear(string[] args, Player author, Player target)
-        {
-            Server.broadcast(Protocol.PacketType.ClearMessages, target.ID);
-            Log(author, $"Cleared messages from [{target.ID}]");
-        }
+        static Command cmdClear = new Command(
+            "clear", 
+            "Clear player messages", 
+            null, 
+            new CommandArgument[] {
+                new CommandArgument("player", false, CommandArgumentType.PlayerID)
+            },
+
+            delegate(string[] args, Player author, Player target)
+            {
+                Server.broadcast(Protocol.PacketType.ClearMessages, target.ID);
+                Log(author, $"Cleared messages from [{target.ID}]");
+            }
+        );
     }
 }

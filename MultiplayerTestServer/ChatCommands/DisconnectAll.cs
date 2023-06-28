@@ -4,24 +4,33 @@ namespace MultiplayerTestServer
 {
     partial class Commands
     {
-        static void CommandDisconnectAll(string[] args, Player author, Player target)
-        {
-            string reason = string.Join(" ", args).Trim();
-            int playersKicked = 0;
+        static Command cmdDisconnectAll = new Command(
+            "disconnectall", 
+            "Disconnect all players", 
+            new string[] { "kickall" }, 
+            new CommandArgument[] {
+                new CommandArgument("reason", true, CommandArgumentType.String)
+            },
 
-            foreach (Player p in Server.players.Values.ToList())
+            delegate(string[] args, Player author, Player target)
             {
-                if (p == author) continue;
+                string reason = string.Join(" ", args).Trim();
+                int playersKicked = 0;
 
-                if (reason.Length != 0)
+                foreach (Player p in Server.players.Values.ToList())
                 {
-                    p.sendServerMessage($"You have been kicked for: {reason}");
-                }
-                p.disconnect();
-                playersKicked++;
-            }
+                    if (p == author) continue;
 
-            Log(author, $"Disconnected {playersKicked} players");
-        }
+                    if (reason.Length != 0)
+                    {
+                        p.sendServerMessage($"You have been kicked for: {reason}");
+                    }
+                    p.disconnect();
+                    playersKicked++;
+                }
+
+                Log(author, $"Disconnected {playersKicked} players");
+            }
+        );
     }
 }
